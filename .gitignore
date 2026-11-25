@@ -1,0 +1,61 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Dependencies
+node_modules/
+package-lock.json
+
+# Production build
+dist/
+build/
+.next/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Sensitive files
+password.txt
+*.key
+*.pem
+*.cert
+
+# Cache
+.cache/
+.eslintcache
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# IDE specific
+.vscode/extensions
+.vscode/settings.json
+
+# Node/npm
+.npmrc
+
+# Testing
+coverage/
+.nyc_output/
+
+# Optional npm cache directory
+.npm
