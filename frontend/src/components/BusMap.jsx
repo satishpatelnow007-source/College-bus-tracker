@@ -1,74 +1,56 @@
+
 import React, { useEffect, useRef } from 'react';
 
-const BusMap = ({ buses, selectedBus, height = '400px' }) => {
+const BusMap = ({ buses = [], selectedBus, height = '400px' }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const markersRef = useRef({});
-
-  useEffect(() => {
-    const loadLeaflet = async () => {
-      if (typeof window !== 'undefined' && !window.L) {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-        document.head.appendChild(link);
-
-        const script = document.createElement('script');
-        script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.onload = initializeMap;
-        document.head.appendChild(script);
-      } else if (window.L) {
-        initializeMap();
-      }
-    };
-
-    const initializeMap = () => {
-      if (mapRef.current && !mapInstanceRef.current) {
-        mapInstanceRef.current = window.L.map(mapRef.current).setView([40.7128, -74.0060], 12);
-
-        window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: 'Kuberachar'
-        }).addTo(mapInstanceRef.current);
-
-        updateBusMarkers();
-      }
-    };
-
-    loadLeaflet();
-
-    return () => {
-      if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
-        mapInstanceRef.current = null;
-        markersRef.current = {};
-      }
-    };
-  }, []);
-
-  useEffect(() => {
-    if (mapInstanceRef.current) {
-      updateBusMarkers();
-    }
-  }, [buses, selectedBus]);
+  const leafletScriptRef = useRef(null);
 
   const updateBusMarkers = () => {
-    if (!mapInstanceRef.current || !window.L) return;
+    const map = mapInstanceRef.current;
+    const L = window.L;
 
-    // Clear existing markers
+    if (!map || !L) return;
+
+    // Remove old markers
     Object.values(markersRef.current).forEach(marker => {
-      mapInstanceRef.current.removeLayer(marker);
+      if (map.hasLayer(marker)) {
+        map.removeLayer(marker);
+      }
     });
+
     markersRef.current = {};
 
-    // Add markers for buses with location
-    buses.forEach(bus => {
-      if (bus.location && bus.location.latitude && bus.location.longitude) {
-        const isSelected = selectedBus && selectedBus.number === bus.number;
-        const isOnline = bus.status === 'Online';
-        
-        // Create custom icon based on status
-        const iconColor = isOnline ? 'green' : 'red';
-        const iconHtml = `<div style="
+    // Safely handle bus data
+    const safeBuses = Array.isArray(buses) ? buses : [];
+
+    safeBuses.forEach(bus => {
+      if (!bus?.location) return;
+
+      const lat = Number(bus.location.latitude);
+      const lng = Number(bus.location.longitude);
+
+      // Validate coordinates
+      if (
+        !Number.isFinite(lat) ||
+        !Number.isFinite(lng) ||
+        lat < -90 ||
+        lat > 90 ||
+        lng < -180 ||
+        lng > 180
+      ) {
+        return;
+      }
+
+      const isSelected =
+        selectedBus && selectedBus.number === bus.number;
+
+      const isOnline = bus.status === 'Online';
+      const iconColor = isOnline ? 'green' : 'red';
+
+      const iconHtml = `
+        <div style="
           background: ${iconColor};
           width: 20px;
           height: 20px;
@@ -81,54 +63,159 @@ const BusMap = ({ buses, selectedBus, height = '400px' }) => {
           color: white;
           font-size: 12px;
           font-weight: bold;
-        ">🚌</div>`;
+        ">🚌</div>
+      `;
 
-        const customIcon = window.L.divIcon({
-          html: iconHtml,
-          className: 'custom-bus-icon',
-          iconSize: [26, 26],
-          iconAnchor: [13, 13]
-        });
+      const customIcon = L.divIcon({
+        html: iconHtml,
+        className: 'custom-bus-icon',
+        iconSize: [26, 26],
+        iconAnchor: [13, 13]
+      });
 
-        const marker = window.L.marker([bus.location.latitude, bus.location.longitude], {
-          icon: customIcon
-        }).addTo(mapInstanceRef.current);
+      const marker = L.marker([lat, lng], {
+        icon: customIcon
+      }).addTo(map);
 
-        marker.bindPopup(`
-          <div style="text-align: center;">
-            <strong>Bus ${bus.number}</strong><br/>
-            Route: ${bus.route || 'Unknown'}<br/>
-            Status: <span style="color: ${iconColor};">${bus.status}</span><br/>
-            ${bus.eta ? `ETA: ${bus.eta}` : ''}
-          </div>
-        `);
+      marker.bindPopup(`
+        <div style="text-align: center;">
+          <strong>Bus ${bus.number || 'Unknown'}</strong><br/>
+          Route: ${bus.route || 'Unknown'}<br/>
+          Status: <span style="color: ${iconColor};">
+            ${bus.status || 'Unknown'}
+          </span><br/>
+          ${bus.eta ? `ETA: ${bus.eta}` : ''}
+        </div>
+      `);
 
-        markersRef.current[bus.number] = marker;
+      markersRef.current[bus.number || `bus-${lat}-${lng}`] = marker;
 
-        // If this bus is selected, center map on it
-        if (isSelected) {
-          mapInstanceRef.current.setView([bus.location.latitude, bus.location.longitude], 15);
-          marker.openPopup();
-        }
+      if (isSelected) {
+        map.setView([lat, lng], 15);
+        marker.openPopup();
       }
     });
 
-    // If no bus is selected but we have buses, fit map to show all buses
-    if (!selectedBus && buses.length > 0) {
-      const busesWithLocation = buses.filter(bus => bus.location && bus.location.latitude && bus.location.longitude);
-      if (busesWithLocation.length > 0) {
-        const group = new window.L.featureGroup(Object.values(markersRef.current));
-        mapInstanceRef.current.fitBounds(group.getBounds().pad(0.1));
+    // Fit map only when valid markers exist
+    if (!selectedBus) {
+      const markerList = Object.values(markersRef.current);
+
+      if (markerList.length > 0) {
+        const group = L.featureGroup(markerList);
+        const bounds = group.getBounds();
+
+        if (bounds.isValid()) {
+          map.fitBounds(bounds.pad(0.1));
+        }
       }
     }
   };
 
+  useEffect(() => {
+    let cancelled = false;
+    let scriptElement = null;
+
+    const initializeMap = () => {
+      if (
+        cancelled ||
+        !mapRef.current ||
+        !window.L ||
+        mapInstanceRef.current
+      ) {
+        return;
+      }
+
+      const L = window.L;
+
+      mapInstanceRef.current = L.map(mapRef.current).setView(
+        [23.2599, 77.4126],
+        12
+      );
+
+      L.tileLayer(
+        'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+        {
+          attribution: '&copy; OpenStreetMap contributors'
+        }
+      ).addTo(mapInstanceRef.current);
+
+      updateBusMarkers();
+    };
+
+    const loadLeaflet = () => {
+      // Leaflet already loaded
+      if (window.L) {
+        initializeMap();
+        return;
+      }
+
+      // Load CSS
+      if (!document.querySelector(
+        'link[href*="leaflet@1.9.4/dist/leaflet.css"]'
+      )) {
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href =
+          'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
+
+      // Reuse an existing script if present
+      const existingScript = document.querySelector(
+        'script[src*="leaflet@1.9.4/dist/leaflet.js"]'
+      );
+
+      if (existingScript) {
+        scriptElement = existingScript;
+
+        if (window.L) {
+          initializeMap();
+        } else {
+          existingScript.addEventListener('load', initializeMap);
+        }
+
+        return;
+      }
+
+      // Load Leaflet JavaScript
+      scriptElement = document.createElement('script');
+      leafletScriptRef.current = scriptElement;
+      scriptElement.src =
+        'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      scriptElement.onload = initializeMap;
+      document.body.appendChild(scriptElement);
+    };
+
+    loadLeaflet();
+
+    return () => {
+      cancelled = true;
+
+      if (scriptElement) {
+        scriptElement.removeEventListener('load', initializeMap);
+      }
+
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+
+      markersRef.current = {};
+    };
+  }, []);
+
+  useEffect(() => {
+    if (mapInstanceRef.current && window.L) {
+      updateBusMarkers();
+    }
+  }, [buses, selectedBus]);
+
   return (
-    <div 
-      ref={mapRef} 
-      style={{ 
-        height, 
-        width: '100%', 
+    <div
+      ref={mapRef}
+      style={{
+        height,
+        width: '100%',
         borderRadius: '10px',
         border: '2px solid #3b82f6'
       }}

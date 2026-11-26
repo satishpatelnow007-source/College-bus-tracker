@@ -1,53 +1,101 @@
-// Authentication routes for all user types
+
 const express = require('express');
 const jwt = require('jsonwebtoken');
+
 const User = require('../models/User');
 const Driver = require('../models/Driver');
+
+const {
+  authenticateToken,
+  requireDriver
+} = require('../middleware/auth');
+
 const router = express.Router();
 
 // Generate JWT token
 const generateToken = (id, role) => {
-  return jwt.sign({ id, role }, process.env.JWT_SECRET, { expiresIn: '7d' });
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not configured');
+  }
+
+  return jwt.sign(
+    { id, role },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
 };
 
-// Student/Faculty Registration
+// ==========================================
+// STUDENT / FACULTY REGISTRATION
+// ==========================================
+
 router.post('/student/register', async (req, res) => {
   try {
     const { name, email, password, confirmPassword, role } = req.body;
 
-    // Validate input
-    if (!name || !email || !password || !confirmPassword) {
-      return res.status(400).json({ message: 'All fields are required' });
+    if (
+      typeof name !== 'string' ||
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      typeof confirmPassword !== 'string'
+    ) {
+      return res.status(400).json({
+        message: 'All fields are required'
+      });
+    }
+
+    const cleanName = name.trim();
+    const cleanEmail = email.trim().toLowerCase();
+
+    if (!cleanName || !cleanEmail || !password || !confirmPassword) {
+      return res.status(400).json({
+        message: 'All fields are required'
+      });
+    }
+
+    // Only student and faculty registration allowed
+    const selectedRole = role || 'student';
+
+    if (!['student', 'faculty'].includes(selectedRole)) {
+      return res.status(400).json({
+        message: 'Invalid user role'
+      });
     }
 
     if (password !== confirmPassword) {
-      return res.status(400).json({ message: 'Passwords do not match' });
+      return res.status(400).json({
+        message: 'Passwords do not match'
+      });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+      return res.status(400).json({
+        message: 'Password must be at least 6 characters'
+      });
     }
 
-    // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({
+      email: cleanEmail
+    });
+
     if (existingUser) {
-      return res.status(400).json({ message: 'User already exists with this email' });
+      return res.status(409).json({
+        message: 'User already exists with this email'
+      });
     }
 
-    // Create new user
     const user = new User({
-      name,
-      email,
+      name: cleanName,
+      email: cleanEmail,
       password,
-      role: role || 'student'
+      role: selectedRole
     });
 
     await user.save();
 
-    // Generate token
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id.toString(), user.role);
 
-    res.status(201).json({
+    return res.status(201).json({
       message: 'Registration successful',
       token,
       user: {
@@ -57,38 +105,68 @@ router.post('/student/register', async (req, res) => {
         role: user.role
       }
     });
+
   } catch (error) {
     console.error('Registration error:', error);
-    res.status(500).json({ message: 'Server error during registration' });
+
+    if (error.code === 11000) {
+      return res.status(409).json({
+        message: 'User already exists with this email'
+      });
+    }
+
+    return res.status(500).json({
+      message: 'Server error during registration'
+    });
   }
 });
 
-// Student/Faculty Login
+// ==========================================
+// STUDENT / FACULTY LOGIN
+// ==========================================
+
 router.post('/student/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Validate input
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (
+      typeof email !== 'string' ||
+      typeof password !== 'string' ||
+      !email.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: 'Email and password are required'
+      });
     }
 
-    // Find user
-    const user = await User.findOne({ email });
+    const user = await User.findOne({
+      email: email.trim().toLowerCase()
+    });
+
     if (!user) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({
+        message: 'Invalid email or password'
+      });
     }
 
-    // Check password
+    if (!user.isActive) {
+      return res.status(403).json({
+        message: 'Your account is deactivated'
+      });
+    }
+
     const isPasswordValid = await user.comparePassword(password);
+
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid email or password' });
+      return res.status(401).json({
+        message: 'Invalid email or password'
+      });
     }
 
-    // Generate token
-    const token = generateToken(user._id, user.role);
+    const token = generateToken(user._id.toString(), user.role);
 
-    res.json({
+    return res.status(200).json({
       message: 'Login successful',
       token,
       user: {
@@ -98,52 +176,90 @@ router.post('/student/login', async (req, res) => {
         role: user.role
       }
     });
+
   } catch (error) {
     console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
+
+    return res.status(500).json({
+      message: 'Server error during login'
+    });
   }
 });
 
-// Driver Login
+// ==========================================
+// DRIVER LOGIN
+// ==========================================
+
 router.post('/driver/login', async (req, res) => {
   try {
     const { driverId, password, location } = req.body;
 
-    // Validate input
-    if (!driverId || !password) {
-      return res.status(400).json({ message: 'Driver ID and password are required' });
+    if (
+      typeof driverId !== 'string' ||
+      typeof password !== 'string' ||
+      !driverId.trim() ||
+      !password
+    ) {
+      return res.status(400).json({
+        message: 'Driver ID and password are required'
+      });
     }
 
-    // Find driver
-    const driver = await Driver.findOne({ driverId: driverId.toUpperCase() });
+    const driver = await Driver.findOne({
+      driverId: driverId.trim().toUpperCase()
+    });
+
     if (!driver) {
-      return res.status(401).json({ message: 'Invalid driver ID or password' });
+      return res.status(401).json({
+        message: 'Invalid driver ID or password'
+      });
     }
 
-    // Check if driver is active
     if (!driver.isActive) {
-      return res.status(401).json({ message: 'Driver account is deactivated' });
+      return res.status(403).json({
+        message: 'Driver account is deactivated'
+      });
     }
 
-    // Check password
     const isPasswordValid = await driver.comparePassword(password);
+
     if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Invalid driver ID or password' });
+      return res.status(401).json({
+        message: 'Invalid driver ID or password'
+      });
     }
 
-    // Update driver status to online
-    driver.isOnline = true;
-    if (location) {
+    // Validate optional location
+    if (location !== undefined && location !== null) {
+      const latitude = Number(location.latitude);
+      const longitude = Number(location.longitude);
+
+      if (
+        !Number.isFinite(latitude) ||
+        !Number.isFinite(longitude) ||
+        latitude < -90 ||
+        latitude > 90 ||
+        longitude < -180 ||
+        longitude > 180
+      ) {
+        return res.status(400).json({
+          message: 'Invalid location coordinates'
+        });
+      }
+
       driver.currentLocation = {
-        latitude: location.latitude,
-        longitude: location.longitude,
+        latitude,
+        longitude,
         timestamp: new Date()
       };
     }
+
+    driver.isOnline = true;
     await driver.save();
 
-    // Create driver session for analytics
+    // Create driver session
     const DriverSession = require('../models/DriverSession');
+
     const session = new DriverSession({
       driverId: driver._id,
       busNumber: driver.busNumber,
@@ -151,12 +267,12 @@ router.post('/driver/login', async (req, res) => {
       loginTime: new Date(),
       loginLocation: location || null
     });
+
     await session.save();
 
-    // Generate token
-    const token = generateToken(driver._id, 'driver');
+    const token = generateToken(driver._id.toString(), 'driver');
 
-    res.json({
+    return res.status(200).json({
       message: 'Login successful',
       token,
       driver: {
@@ -167,102 +283,129 @@ router.post('/driver/login', async (req, res) => {
         phone: driver.phone
       }
     });
+
   } catch (error) {
     console.error('Driver login error:', error);
-    res.status(500).json({ message: 'Server error during login' });
+
+    return res.status(500).json({
+      message: 'Server error during login'
+    });
   }
 });
 
-// Admin Login
+// ==========================================
+// ADMIN LOGIN
+// ==========================================
+
 router.post('/admin/login', async (req, res) => {
   try {
     const { password } = req.body;
 
-    // Validate input
-    if (!password) {
-      return res.status(400).json({ message: 'Password is required' });
+    if (typeof password !== 'string' || !password) {
+      return res.status(400).json({
+        message: 'Password is required'
+      });
     }
 
-    // Check admin password (from environment variable)
+    if (!process.env.ADMIN_PASSWORD) {
+      console.error('ADMIN_PASSWORD is not configured');
+
+      return res.status(500).json({
+        message: 'Admin authentication is not configured'
+      });
+    }
+
     if (password !== process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ message: 'Invalid admin password' });
+      return res.status(401).json({
+        message: 'Invalid admin password'
+      });
     }
 
-    // Generate token for admin
     const token = generateToken('admin', 'admin');
 
-    res.json({
+    return res.status(200).json({
       message: 'Admin login successful',
       token,
       user: {
         role: 'admin'
       }
     });
+
   } catch (error) {
     console.error('Admin login error:', error);
-    res.status(500).json({ message: 'Server error during admin login' });
+
+    return res.status(500).json({
+      message: 'Server error during login'
+    });
   }
 });
 
-// Driver Logout
-router.post('/driver/logout', async (req, res) => {
-  try {
-    const { driverId, location } = req.body;
+// ==========================================
+// SECURE DRIVER LOGOUT
+// ==========================================
 
-    if (!driverId) {
-      return res.status(400).json({ message: 'Driver ID is required' });
-    }
+router.post(
+  '/driver/logout',
+  authenticateToken,
+  requireDriver,
+  async (req, res) => {
+    try {
+      // Driver identity comes from verified JWT
+      const driver = await Driver.findById(req.user.id);
 
-    // Find and update driver status
-    const driver = await Driver.findOne({ driverId: driverId.toUpperCase() });
-    if (driver) {
+      if (!driver) {
+        return res.status(404).json({
+          message: 'Driver not found'
+        });
+      }
+
       driver.isOnline = false;
       await driver.save();
+
+      // Update latest active session
+      const DriverSession = require('../models/DriverSession');
+
+      const session = await DriverSession.findOne({
+        driverId: driver._id,
+        logoutTime: null
+      }).sort({ loginTime: -1 });
+
+      if (session) {
+        session.logoutTime = new Date();
+
+        session.sessionDuration = Math.max(
+          0,
+          Math.round(
+            (session.logoutTime - session.loginTime) / (1000 * 60)
+          )
+        );
+
+        session.isActive = false;
+        await session.save();
+      }
+
+      return res.status(200).json({
+        message: 'Logout successful'
+      });
+
+    } catch (error) {
+      console.error('Driver logout error:', error);
+
+      return res.status(500).json({
+        message: 'Server error during logout'
+      });
     }
-
-    // Update the latest active session
-    const DriverSession = require('../models/DriverSession');
-    const session = await DriverSession.findOne({
-      driverId: driver._id,
-      logoutTime: null
-    }).sort({ loginTime: -1 });
-
-    if (session) {
-      session.logoutTime = new Date();
-      session.logoutLocation = location || null;
-      session.sessionDuration = Math.round((session.logoutTime - session.loginTime) / (1000 * 60)); // in minutes
-      session.isActive = false;
-      await session.save();
-    }
-
-    res.json({ message: 'Logout successful' });
-  } catch (error) {
-    console.error('Driver logout error:', error);
-    res.status(500).json({ message: 'Server error during logout' });
   }
-});
+);
 
-// Forgot Password (placeholder for future implementation)
+// ==========================================
+// FORGOT PASSWORD
+// ==========================================
+
 router.post('/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-    
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found with this email' });
-    }
-
-    // In a real application, you would:
-    // 1. Generate a reset token
-    // 2. Send email with reset link
-    // 3. Store token in database with expiration
-    
-    res.json({ message: 'Password reset instructions sent to your email' });
-  } catch (error) {
-    console.error('Forgot password error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
+  return res.status(501).json({
+    message: 'Password reset functionality is not implemented yet'
+  });
 });
 
 module.exports = router;

@@ -227,21 +227,8 @@ const StudentDashboard = () => {
             fontWeight: '500',
             position: 'relative'
           }}
-        >Gallery</button>
-        <button onClick={() => setActiveTab('about_developers')}
-          style={{
-            background: activeTab === 'about_developers' ? '#667eea' : 'transparent',
-            color: activeTab === 'about_developers' ? 'white' : '#333',
-            border: 'none',
-            padding: '10px 20px',
-            borderRadius: '5px 5px 0 0',
-            cursor: 'pointer',
-            fontWeight: '500',
-            position: 'relative'
-          }}
-        >About Developers</button>
+          >Gallery</button>
       </div>
-
       {/* Tab Content */}
       {activeTab === 'tracking' && (
         <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '20px' }}>
@@ -398,7 +385,7 @@ const StudentDashboard = () => {
           <img style={{width: '500px', height: '500px', borderRadius: '20px', margin: '15px' }} src="../bus_img4.jpg" alt="Bus mage"/>
         </div>
       )}
-      {activeTab === 'about_developers' && (
+      {/* {activeTab === 'about_developers' && (
         <>
           <div style={{display: 'flex', justifyContent: 'space-around', marginBottom: '20px'}}>
             <div style={{border: '1px solid', borderRadius: '20px', padding: '20px'}}>
@@ -429,7 +416,7 @@ const StudentDashboard = () => {
             </div>
           </div>
         </>
-      )}
+      )} */}
     </div>
   );
 };

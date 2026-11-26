@@ -16,16 +16,27 @@ const adminRoutes = require('./routes/admin');
 const app = express();
 const server = http.createServer(app);
 
+// Allowed frontend URLs
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174"
+];
+
 // Setup Socket.IO with CORS
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:5173", // Frontend URL
-    methods: ["GET", "POST"]
+    origin: allowedOrigins,
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
 // Middleware
-app.use(cors()); // Enable Cross-Origin Resource Sharing
+app.use(cors({
+  origin: allowedOrigins,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  credentials: true
+})); // Enable Cross-Origin Resource Sharing
 app.use(express.json()); // Parse JSON bodies
 
 // Connect to MongoDB database

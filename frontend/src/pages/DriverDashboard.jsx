@@ -74,19 +74,27 @@ const DriverDashboard = () => {
     
     setLoading(false);
   };
+const logout = async () => {
+  try {
+    const token = localStorage.getItem('token');
 
-  const logout = async () => {
-    try {
-      await api.post('/driver/logout', { location });
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      navigate('/');
-    } catch (error) {
-      console.error('Logout error:', error);
-      navigate('/');
-    }
-  };
+    await api.post(
+      '/driver/logout',
+      {},
+      {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      }
+    );
 
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    navigate('/');
+  } catch (error) {
+    console.error('Logout error:', error.response?.data || error.message);
+  }
+};
   return (
     <div style={{ 
       minHeight: '100vh', 
