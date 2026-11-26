@@ -1,173 +1,179 @@
+
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../utils/api';
+import '../styles/Auth.css';
 
 const StudentRegister = () => {
   const [formData, setFormData] = useState({
-    name: '', email: '', password: '', confirmPassword: '', role: 'student'
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    role: 'student'
   });
+
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       alert('Passwords do not match');
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       const response = await api.post('/auth/student/register', formData);
+
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+
       navigate('/student/dashboard');
     } catch (error) {
       alert(error.response?.data?.message || 'Registration failed');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #3b82f6 0%, #1e40af 100%)',
-      padding: '20px'
-    }}>
-      <div style={{ 
-        background: 'rgba(255, 255, 255, 0.95)', 
-        padding: '40px', 
-        borderRadius: '15px', 
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-        backdropFilter: 'blur(10px)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '10px' }}>📝</div>
-          <h2 style={{ color: '#333', marginBottom: '10px' }}>Student Registration</h2>
-          <p style={{ color: '#666' }}>Create your account to track buses</p>
+    <div className="auth-page">
+
+      <section className="auth-left">
+        <div className="auth-brand">College Bus Tracker</div>
+
+        <h1>Start Your Journey With Us.</h1>
+
+        <p>
+          Create your account to access live bus tracking,
+          route information, and important campus travel updates.
+        </p>
+
+        <div className="auth-features">
+          <div className="auth-feature">Live Bus Tracking</div>
+          <div className="auth-feature">Instant Alerts</div>
+          <div className="auth-feature">Easy Access</div>
         </div>
+      </section>
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '15px' }}>
-            <input
-              type="text"
-              value={formData.name}
-              onChange={(e) => setFormData({...formData, name: e.target.value})}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '16px'
-              }}
-              placeholder="Full Name"
-              required
-            />
-          </div>
+      <section className="auth-right">
+        <div className="auth-card">
 
-          <div style={{ marginBottom: '15px' }}>
-            <input
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '16px'
-              }}
-              placeholder="Email Address"
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <select
-              value={formData.role}
-              onChange={(e) => setFormData({...formData, role: e.target.value})}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '16px'
-              }}
-            >
-              <option value="student">Student</option>
-              <option value="faculty">Faculty</option>
-            </select>
-          </div>
-
-          <div style={{ marginBottom: '15px' }}>
-            <input
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({...formData, password: e.target.value})}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '16px'
-              }}
-              placeholder="Password"
-              required
-            />
-          </div>
-
-          <div style={{ marginBottom: '20px' }}>
-            <input
-              type="password"
-              value={formData.confirmPassword}
-              onChange={(e) => setFormData({...formData, confirmPassword: e.target.value})}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '16px'
-              }}
-              placeholder="Confirm Password"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              background: '#3b82f6',
-              color: 'white',
-              padding: '12px',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? 'Creating Account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          <p style={{ color: '#666', fontSize: '14px' }}>
-            Already have an account? <Link to="/student/login" style={{ color: '#3b82f6' }}>Sign in here</Link>
+          <h2>Create Account</h2>
+          <p className="auth-subtitle">
+            Register to get started with College Bus Tracker.
           </p>
-          <Link to="/" style={{ color: '#3b82f6', textDecoration: 'none' }}>← Back to Home</Link>
+
+          <form onSubmit={handleSubmit}>
+
+            <div className="auth-form-group">
+              <label htmlFor="name">Full Name</label>
+              <input
+                id="name"
+                className="auth-input"
+                type="text"
+                placeholder="Enter your full name"
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                autoComplete="name"
+                required
+              />
+            </div>
+
+            <div className="auth-form-group">
+              <label htmlFor="register-email">Email Address</label>
+              <input
+                id="register-email"
+                className="auth-input"
+                type="email"
+                placeholder="Enter your email"
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                autoComplete="email"
+                required
+              />
+            </div>
+
+            <div className="auth-form-group">
+              <label htmlFor="role">Register As</label>
+              <select
+                id="role"
+                className="auth-input"
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({ ...formData, role: e.target.value })
+                }
+              >
+                <option value="student">Student</option>
+                <option value="faculty">Faculty</option>
+              </select>
+            </div>
+
+            <div className="auth-form-group">
+              <label htmlFor="register-password">Password</label>
+              <input
+                id="register-password"
+                className="auth-input"
+                type="password"
+                placeholder="Create a password"
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                autoComplete="new-password"
+                required
+              />
+            </div>
+
+            <div className="auth-form-group">
+              <label htmlFor="confirm-password">Confirm Password</label>
+              <input
+                id="confirm-password"
+                className="auth-input"
+                type="password"
+                placeholder="Confirm your password"
+                value={formData.confirmPassword}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    confirmPassword: e.target.value
+                  })
+                }
+                autoComplete="new-password"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="auth-button"
+              disabled={loading}
+            >
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </button>
+
+          </form>
+
+          <div className="auth-links">
+            <p>
+              Already have an account?{' '}
+              <Link to="/student/login">Sign In</Link>
+            </p>
+
+            <Link to="/">← Back to Home</Link>
+          </div>
+
         </div>
-      </div>
+      </section>
+
     </div>
   );
 };

@@ -1,0 +1,228 @@
+
+.driver-dashboard {
+  min-height: 100vh;
+  padding: 30px 20px;
+  background: #f5f8fc;
+  color: #172b4d;
+  font-family: Arial, sans-serif;
+}
+
+.driver-container {
+  max-width: 1050px;
+  margin: 0 auto;
+}
+
+.driver-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 15px;
+  padding: 25px 30px;
+  margin-bottom: 22px;
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+}
+
+.driver-header h1 {
+  margin: 0;
+  font-size: 25px;
+  color: #172b4d;
+}
+
+.driver-header p {
+  margin: 8px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.driver-logout {
+  padding: 11px 20px;
+  color: #dc2626;
+  background: #ffffff;
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.driver-logout:hover {
+  background: #fef2f2;
+}
+
+.driver-status-card {
+  padding: 35px 25px;
+  margin-bottom: 22px;
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.driver-status-label {
+  margin-bottom: 12px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.driver-status-indicator {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 9px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.driver-status-indicator.online {
+  background: #16a34a;
+}
+
+.driver-status-indicator.offline {
+  background: #dc2626;
+}
+
+.driver-status-card h2 {
+  margin: 0 0 22px;
+  font-size: 27px;
+  color: #172b4d;
+}
+
+.driver-status-button {
+  min-width: 180px;
+  padding: 14px 25px;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.driver-status-button.online {
+  background: #dc2626;
+}
+
+.driver-status-button.offline {
+  background: #16a34a;
+}
+
+.driver-status-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.driver-location-warning {
+  margin-top: 18px;
+  color: #dc2626;
+  font-size: 13px;
+}
+
+.driver-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 22px;
+  margin-bottom: 22px;
+}
+
+.driver-info-card {
+  padding: 25px;
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+}
+
+.driver-info-card h3 {
+  margin: 0 0 20px;
+  font-size: 18px;
+  color: #172b4d;
+}
+
+.driver-coordinate {
+  margin: 13px 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.driver-coordinate strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #334155;
+  font-size: 12px;
+}
+
+.driver-location-note {
+  margin-top: 18px;
+  color: #94a3b8;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.driver-map-card {
+  padding: 25px;
+  background: #ffffff;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+}
+
+.driver-map-card h3 {
+  margin: 0 0 18px;
+  font-size: 18px;
+  color: #172b4d;
+}
+
+.driver-map-placeholder {
+  min-height: 350px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: #f8fafc;
+  border-radius: 10px;
+  color: #64748b;
+  text-align: center;
+}
+
+@media (max-width: 650px) {
+  .driver-dashboard {
+    padding: 18px 12px;
+  }
+
+  .driver-header {
+    padding: 20px;
+  }
+
+  .driver-header h1 {
+    font-size: 20px;
+  }
+
+  .driver-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .driver-status-card {
+    padding: 28px 15px;
+  }
+
+  .driver-status-card h2 {
+    font-size: 23px;
+  }
+
+  .driver-map-card {
+    padding: 17px;
+  }
+}
+
+@media (max-width: 400px) {
+  .driver-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .driver-logout {
+    width: 100%;
+  }
+}

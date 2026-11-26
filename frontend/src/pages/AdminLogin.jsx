@@ -1,6 +1,8 @@
+
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { api } from '../utils/api';
+import '../styles/Auth.css';
 
 const AdminLogin = () => {
   const [password, setPassword] = useState('');
@@ -10,86 +12,83 @@ const AdminLogin = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const response = await api.post('/auth/admin/login', { password });
+
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
+
       navigate('/admin/dashboard');
     } catch (error) {
       alert(error.response?.data?.message || 'Login failed');
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
   };
 
   return (
-    <div style={{ 
-      minHeight: '100vh', 
-      display: 'flex', 
-      alignItems: 'center', 
-      justifyContent: 'center',
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-      padding: '20px'
-    }}>
-      <div style={{ 
-        background: 'rgba(255, 255, 255, 0.95)', 
-        padding: '40px', 
-        borderRadius: '15px', 
-        boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-        backdropFilter: 'blur(10px)',
-        width: '100%',
-        maxWidth: '400px'
-      }}>
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
-          <div style={{ fontSize: '48px', marginBottom: '10px' }}>💼</div>
-          <h2 style={{ color: '#333', marginBottom: '10px' }}>Admin Login</h2>
-          <p style={{ color: '#666' }}>Enter admin password to continue</p>
-        </div>
+    <div className="auth-page">
 
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '20px' }}>
-            <label style={{ display: 'block', marginBottom: '5px', fontWeight: '500' }}>Admin Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '12px',
-                border: '2px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '16px'
-              }}
-              placeholder="Enter admin password"
-              required
-            />
+      <section className="auth-left">
+        <div className="auth-brand">College Bus Tracker</div>
+
+        <h1>Manage Your Campus Transport.</h1>
+
+        <p>
+          Access the administration portal to manage drivers,
+          routes, buses, and monitor campus transportation.
+        </p>
+
+        <div className="auth-features">
+          <div className="auth-feature">Driver Management</div>
+          <div className="auth-feature">Route Management</div>
+          <div className="auth-feature">Live Monitoring</div>
+        </div>
+      </section>
+
+      <section className="auth-right">
+        <div className="auth-card">
+
+          <h2>Admin Login</h2>
+          <p className="auth-subtitle">
+            Sign in securely to access the admin dashboard.
+          </p>
+
+          <form onSubmit={handleSubmit}>
+
+            <div className="auth-form-group">
+              <label htmlFor="admin-password">Admin Password</label>
+
+              <input
+                id="admin-password"
+                className="auth-input"
+                type="password"
+                placeholder="Enter admin password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                autoComplete="current-password"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              className="auth-button"
+              disabled={loading}
+            >
+              {loading ? 'Signing In...' : 'Sign In to Dashboard'}
+            </button>
+
+          </form>
+
+          <div className="auth-links">
+            <Link to="/">← Back to Home</Link>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              width: '100%',
-              background: '#8b5cf6',
-              color: 'white',
-              padding: '12px',
-              border: 'none',
-              borderRadius: '8px',
-              fontSize: '16px',
-              fontWeight: '500',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              opacity: loading ? 0.7 : 1
-            }}
-          >
-            {loading ? 'Signing In...' : 'Sign In'}
-          </button>
-        </form>
-
-        <div style={{ textAlign: 'center', marginTop: '20px' }}>
-          <a href="/" style={{ color: '#8b5cf6', textDecoration: 'none' }}>← Back to Home</a>
         </div>
-      </div>
+      </section>
+
     </div>
   );
 };
